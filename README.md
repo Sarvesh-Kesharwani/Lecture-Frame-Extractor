@@ -21,6 +21,21 @@ TypeScript + React + Vite (via CRXJS) gives a small, typed MV3 build and reliabl
 
 Everything is processed locally. No video or image is uploaded.
 
+## Persistent frame library
+
+Each video is analyzed once and saved in the extension's local library. Reopening the same video or changing Auto/Minimum and Frame Detail re-filters the stored compact signatures without seeking or analyzing the video again. The popup's **View Saved Frames** button opens the full-screen study library.
+
+Choose **Storage Folder** once from the popup. Chrome asks for directory permission, then the extension creates and maintains:
+
+```text
+video-notes/
+  video_name/
+    video_name.json
+    all-frames/
+```
+
+The JSON records the source URL, title, duration, settings, timestamps, visual scores, and selection state. Chrome may ask to reconnect the folder after browser permission resets.
+
 ## Development
 
 Requires Node.js 20+.

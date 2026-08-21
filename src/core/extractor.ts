@@ -5,6 +5,17 @@ import { selectFrames } from './selection';
 
 export type Progress = (message: string, percent: number) => void;
 
+function encodePixels(pixels: Uint8Array) {
+  let binary = '';
+  for (let i = 0; i < pixels.length; i += 1) binary += String.fromCharCode(pixels[i]);
+  return btoa(binary);
+}
+
+function decodePixels(value: string) {
+  const binary = atob(value);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+
 async function seekWithRetry(adapter: VideoAdapter, timestamp: number, attempts = 3): Promise<void> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -69,7 +80,7 @@ export async function extractFrames(adapter: VideoAdapter, preferences: Preferen
     if (samples.length < 2) throw new Error('The player repeatedly failed to seek. Check that the video is fully loaded and seekable, then try again.');
     const selected = new Set(selectFrames(samples, preferences.mode, preferences.detail).map((frame) => frame.timestamp));
     progress(`Selected ${selected.size} of ${samples.length} analyzed frames`, 100);
-    return samples.map((frame) => ({ timestamp: frame.timestamp, dataUrl: frame.previewDataUrl, selected: selected.has(frame.timestamp), changeScore: frame.changeScore }));
+    return samples.map((frame) => ({ timestamp: frame.timestamp, dataUrl: frame.previewDataUrl, selected: selected.has(frame.timestamp), changeScore: frame.changeScore, signature: encodePixels(frame.pixels), density: frame.density }));
   } finally {
     try { await adapter.seek(originalTime); } catch { /* The page may have navigated away. */ }
     if (!wasPaused) void video.play().catch(() => undefined);
@@ -109,4 +120,19 @@ export async function captureSelectedFrames(adapter: VideoAdapter, frames: Extra
     if (!wasPaused) void video.play().catch(() => undefined);
     canvas.width = 1;
   }
+}
+
+/** Re-runs selection only from stored compact signatures; it never touches or seeks the video. */
+export function filterStoredFrames(frames: ExtractedFrame[], preferences: Preferences): ExtractedFrame[] {
+  const analysis = frames.map((frame) => ({
+    timestamp: frame.timestamp,
+    pixels: decodePixels(frame.signature),
+    width: 64,
+    height: 36,
+    density: frame.density,
+    changeScore: frame.changeScore,
+    previewDataUrl: frame.dataUrl,
+  }));
+  const selected = new Set(selectFrames(analysis, preferences.mode, preferences.detail).map((frame) => frame.timestamp));
+  return frames.map((frame) => ({ ...frame, selected: selected.has(frame.timestamp) }));
 }

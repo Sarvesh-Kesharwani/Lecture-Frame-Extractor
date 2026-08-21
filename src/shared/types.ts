@@ -12,6 +12,18 @@ export interface ExtractedFrame {
   dataUrl: string;
   selected: boolean;
   changeScore: number;
+  signature: string;
+  density: number;
+}
+
+export interface VideoRecord {
+  id: string;
+  title: string;
+  url: string;
+  duration: number;
+  createdAt: string;
+  preferences: Preferences;
+  frames: ExtractedFrame[];
 }
 
 export const DEFAULT_PREFERENCES: Preferences = { mode: 'auto', detail: 'balanced', analysisScale: 35 };
@@ -32,4 +44,7 @@ export function scaledAnalysisSize(videoWidth: number, videoHeight: number, scal
 
 export type RuntimeMessage =
   | { type: 'LFE_START'; preferences?: Preferences }
-  | { type: 'LFE_STATUS' };
+  | { type: 'LFE_STATUS' }
+  | { type: 'LFE_SAVE_RECORD'; record: VideoRecord }
+  | { type: 'LFE_GET_RECORD'; url?: string; id?: string }
+  | { type: 'LFE_LIST_RECORDS' };

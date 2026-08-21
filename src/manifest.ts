@@ -11,7 +11,9 @@ export default defineManifest({
     48: 'icons/icon-48.png',
     128: 'icons/icon-128.png',
   },
-  permissions: ['storage', 'activeTab'],
+  permissions: ['storage', 'unlimitedStorage', 'activeTab'],
+  background: { service_worker: 'src/background.ts', type: 'module' },
+  options_page: 'src/library/index.html',
   action: {
     default_popup: 'src/popup/index.html',
     default_title: 'Lecture Frame Extractor',

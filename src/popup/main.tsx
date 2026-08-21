@@ -24,6 +24,7 @@ function App() {
     try { await chrome.tabs.sendMessage(tab.id, { type: 'LFE_START', preferences }); window.close(); }
     catch { setMessage('Reload this video page once, then try again.'); }
   };
+  const openLibrary = (storage = false) => void chrome.tabs.create({ url: chrome.runtime.getURL(`src/library/index.html${storage ? '#storage' : ''}`) });
   return <main>
     <header><img src="/icons/icon-48.png" alt=""/><h1>Lecture Frame Extractor</h1></header>
     <div className="modes">
@@ -46,6 +47,7 @@ function App() {
       <small>Higher resolution detects finer writing but processes more slowly.</small>
     </section>
     <button className="extract" onClick={() => void start()}>Extract Frames</button>
+    <div className="library-actions"><button onClick={() => openLibrary(false)}>View Saved Frames</button><button onClick={() => openLibrary(true)}>Storage Folder</button></div>
     {message && <p>{message}</p>}
   </main>;
 }

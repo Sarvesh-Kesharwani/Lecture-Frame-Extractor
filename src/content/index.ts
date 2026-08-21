@@ -1,12 +1,18 @@
 import { getAdapter } from '../core/adapters';
-import { captureSelectedFrames, extractFrames } from '../core/extractor';
-import { DEFAULT_PREFERENCES, normalizePreferences, type ExtractedFrame, type Preferences, type RuntimeMessage } from '../shared/types';
+import { captureSelectedFrames, extractFrames, filterStoredFrames } from '../core/extractor';
+import { DEFAULT_PREFERENCES, normalizePreferences, type ExtractedFrame, type Preferences, type RuntimeMessage, type VideoRecord } from '../shared/types';
 
 const HOST_ID = 'lecture-frame-extractor-root';
 let busy = false;
 let statusText = '';
 let host: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
+let activeRecord: VideoRecord | null = null;
+
+async function recordId(url: string) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(url));
+  return [...new Uint8Array(digest)].slice(0, 12).map((value) => value.toString(16).padStart(2, '0')).join('');
+}
 
 function formatTime(seconds: number) {
   const value = Math.max(0, Math.floor(seconds));
@@ -126,6 +132,11 @@ function showGallery(frames: ExtractedFrame[]) {
     filter.disabled = true;
     try {
       const finalFrames = await captureSelectedFrames(getAdapter(), selected, (message) => { gallery.querySelector('.gallery-head span')!.textContent = message; });
+      if (activeRecord) {
+        const highResolution = new Map(finalFrames.map((frame) => [frame.timestamp, frame]));
+        activeRecord = { ...activeRecord, frames: frames.map((frame) => highResolution.get(frame.timestamp) ?? frame) };
+        await chrome.runtime.sendMessage({ type: 'LFE_SAVE_RECORD', record: activeRecord } satisfies RuntimeMessage);
+      }
       document.removeEventListener('keydown', keyboard);
       gallery.remove();
       showViewer(finalFrames);
@@ -150,7 +161,25 @@ async function startExtraction(override?: Preferences) {
   try {
     const stored = await chrome.storage.sync.get(DEFAULT_PREFERENCES);
     const preferences = normalizePreferences(override ?? stored);
+    const saved = await chrome.runtime.sendMessage({ type: 'LFE_GET_RECORD', url: location.href } satisfies RuntimeMessage) as { record?: VideoRecord };
+    if (saved.record) {
+      const frames = filterStoredFrames(saved.record.frames, preferences);
+      activeRecord = { ...saved.record, preferences, frames };
+      await chrome.runtime.sendMessage({ type: 'LFE_SAVE_RECORD', record: activeRecord } satisfies RuntimeMessage);
+      showGallery(frames);
+      return;
+    }
     const frames = await extractFrames(adapter, preferences, (message) => { statusText = message; renderButton(); });
+    activeRecord = {
+      id: await recordId(location.href),
+      title: document.title.replace(/\s+-\s+YouTube$/, '').trim() || 'Lecture Video',
+      url: location.href,
+      duration: adapter.findVideo()?.duration ?? 0,
+      createdAt: new Date().toISOString(),
+      preferences,
+      frames,
+    };
+    await chrome.runtime.sendMessage({ type: 'LFE_SAVE_RECORD', record: activeRecord } satisfies RuntimeMessage);
     showGallery(frames);
   } catch (error) {
     busy = false;
