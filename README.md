@@ -2,6 +2,8 @@
 
 A local-first Chrome Manifest V3 extension that finds a compact set of major, useful visual states in long lecture videos. It targets YouTube and Udemy and also supports accessible HTML5 video on other sites.
 
+![Lecture Frame Extractor logo](assets/logo-1024.png)
+
 ## Why this stack
 
 TypeScript + React + Vite (via CRXJS) gives a small, typed MV3 build and reliable multi-entry extension packaging. Flow.js is a static type checker rather than an extension framework; TypeScript provides the same safety with much stronger tooling here. React is used only for the tiny popup. The in-page UI uses dependency-free DOM and Shadow DOM.

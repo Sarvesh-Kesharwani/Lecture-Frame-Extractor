@@ -15,7 +15,7 @@ function App() {
     catch { setMessage('Reload this video page once, then try again.'); }
   };
   return <main>
-    <h1>Lecture Frame Extractor</h1>
+    <header><img src="/icons/icon-48.png" alt=""/><h1>Lecture Frame Extractor</h1></header>
     <div className="modes">
       {(['auto', 'minimum'] as ExtractionMode[]).map((mode) => <button key={mode} className={preferences.mode === mode ? 'selected' : ''} onClick={() => update({ ...preferences, mode })}>
         <strong>{mode === 'auto' ? 'Auto' : 'Minimum'}</strong><span>{mode === 'auto' ? 'Balanced context' : 'Fewest frames'}</span>
