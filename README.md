@@ -10,13 +10,13 @@ TypeScript + React + Vite (via CRXJS) gives a small, typed MV3 build and reliabl
 
 ## Extraction algorithm
 
-1. Adaptively sample 50–360 timestamps instead of decoding every frame.
-2. Seek the existing player and analyze a 32×18 grayscale image.
+1. Adaptively sample 50–360 timestamps instead of decoding every frame, visiting every timestamp only once.
+2. Seek the existing player and analyze at a user-controlled resolution from 32×18 to the video's original size.
 3. Divide the image into blocks, exclude the bottom controls strip, and trim the noisiest blocks so cursors, webcam motion, and small annotations do not trigger captures.
 4. Segment major visual transitions using robust pixel-change and changed-area scores.
 5. Prefer the final (most complete) state before each transition. Auto mode may retain an additional evolved state for a long, information-changing canvas; Minimum mode retains only segment endpoints.
 6. Remove perceptually near-duplicate selections.
-7. Perform a second pass that captures only selected timestamps as high-quality JPEGs (up to 1600px wide).
+7. Retain a memory-bounded preview during that same pass, then show every analyzed frame in a debug gallery with selected frames highlighted and a Selected-only toggle.
 
 Everything is processed locally. No video or image is uploaded.
 

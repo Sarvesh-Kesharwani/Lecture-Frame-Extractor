@@ -23,7 +23,7 @@ function ensureUi() {
   shadow = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = `
-    :host{all:initial} *{box-sizing:border-box} .launch{position:fixed;right:18px;bottom:72px;z-index:2147483646;border:0;border-radius:999px;background:#111;color:#fff;padding:10px 15px;font:600 13px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer}.launch:hover{background:#292929}.launch:disabled{opacity:.7;cursor:wait}.status{position:fixed;right:18px;bottom:116px;z-index:2147483646;max-width:300px;padding:9px 12px;border-radius:8px;background:#111;color:#fff;font:12px system-ui;box-shadow:0 4px 18px #0005}.viewer{position:fixed;inset:0;z-index:2147483647;background:#080808;display:flex;align-items:center;justify-content:center;font-family:system-ui;color:#fff}.viewer img{max-width:100vw;max-height:calc(100vh - 72px);object-fit:contain}.nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.nav button,.close{pointer-events:auto;border:0;background:#0008;color:#fff;cursor:pointer;font-size:28px}.nav button{width:58px;height:88px;border-radius:8px}.close{position:absolute;right:16px;top:16px;width:42px;height:42px;border-radius:50%;z-index:2}.footer{position:absolute;bottom:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:center;gap:22px;background:linear-gradient(transparent,#000c);font:14px system-ui}.time{border:0;background:transparent;color:#8ec5ff;text-decoration:underline;cursor:pointer;font:inherit}.error{position:fixed;right:18px;bottom:116px;z-index:2147483647;max-width:380px;padding:12px 14px;border-radius:8px;background:#7f1d1d;color:white;font:13px/1.4 system-ui;box-shadow:0 4px 20px #0007}`;
+    :host{all:initial} *{box-sizing:border-box}.launch{position:fixed;right:18px;bottom:72px;z-index:2147483646;border:0;border-radius:999px;background:#111;color:#fff;padding:10px 15px;font:600 13px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer}.launch:hover{background:#292929}.launch:disabled{opacity:.7;cursor:wait}.status{position:fixed;right:18px;bottom:116px;z-index:2147483646;max-width:340px;padding:9px 12px;border-radius:8px;background:#111;color:#fff;font:12px system-ui;box-shadow:0 4px 18px #0005}.viewer{position:fixed;inset:0;z-index:2147483647;background:#080808;display:flex;align-items:center;justify-content:center;font-family:system-ui;color:#fff}.viewer>img{max-width:100vw;max-height:calc(100vh - 72px);object-fit:contain}.nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.nav button,.close{pointer-events:auto;border:0;background:#0008;color:#fff;cursor:pointer;font-size:28px}.nav button{width:58px;height:88px;border-radius:8px}.close{position:absolute;right:16px;top:16px;width:42px;height:42px;border-radius:50%;z-index:2}.footer{position:absolute;bottom:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:center;gap:22px;background:linear-gradient(transparent,#000c);font:14px system-ui}.time{border:0;background:transparent;color:#8ec5ff;text-decoration:underline;cursor:pointer;font:inherit}.error{position:fixed;right:18px;bottom:116px;z-index:2147483647;max-width:380px;padding:12px 14px;border-radius:8px;background:#7f1d1d;color:white;font:13px/1.4 system-ui;box-shadow:0 4px 20px #0007}.gallery{position:fixed;inset:0;z-index:2147483647;background:#0a0a0d;color:#fff;font-family:system-ui;overflow:auto;padding:82px 22px 28px}.gallery-head{position:fixed;z-index:2;left:0;right:0;top:0;height:66px;padding:0 76px 0 22px;background:#111118eF;backdrop-filter:blur(12px);display:flex;align-items:center;gap:14px;border-bottom:1px solid #ffffff18}.gallery-head strong{font-size:16px}.gallery-head span{font-size:12px;color:#aaa}.filter{margin-left:auto;border:1px solid #555;border-radius:8px;background:#23232d;color:#fff;padding:8px 12px;font:600 12px system-ui;cursor:pointer}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.card{position:relative;background:#181820;border:2px solid transparent;border-radius:10px;overflow:hidden}.card.selected{border-color:#39dc88;box-shadow:0 0 0 2px #39dc8840}.card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}.badge{position:absolute;right:7px;top:7px;border-radius:999px;background:#137a48;color:#fff;padding:4px 7px;font:700 10px system-ui}.meta{display:flex;align-items:center;justify-content:space-between;padding:8px 9px;font:11px system-ui;color:#aaa}.meta .time{color:#8ec5ff}.empty{text-align:center;color:#aaa;padding:60px}`;
   shadow.append(style);
   document.documentElement.append(host);
   renderButton();
@@ -56,7 +56,7 @@ function showError(message: string) {
   setTimeout(() => error.remove(), 9000);
 }
 
-function showViewer(frames: ExtractedFrame[]) {
+function showViewer(frames: ExtractedFrame[], onClose?: () => void) {
   if (!shadow) return;
   shadow.querySelectorAll('.launch,.status,.error').forEach((element) => element.remove());
   let index = 0;
@@ -71,7 +71,7 @@ function showViewer(frames: ExtractedFrame[]) {
     (viewer.querySelector('.next') as HTMLButtonElement).disabled = index === frames.length - 1;
   };
   const move = (delta: number) => { index = Math.max(0, Math.min(frames.length - 1, index + delta)); update(); };
-  const close = () => { document.removeEventListener('keydown', keyboard); viewer.remove(); renderButton(); };
+  const close = () => { document.removeEventListener('keydown', keyboard); viewer.remove(); if (onClose) onClose(); else renderButton(); };
   const keyboard = (event: KeyboardEvent) => {
     if (event.key === 'ArrowLeft') { event.preventDefault(); move(-1); }
     if (event.key === 'ArrowRight') { event.preventDefault(); move(1); }
@@ -86,6 +86,41 @@ function showViewer(frames: ExtractedFrame[]) {
   update();
 }
 
+function showGallery(frames: ExtractedFrame[]) {
+  if (!shadow) return;
+  shadow.querySelectorAll('.launch,.status,.error').forEach((element) => element.remove());
+  let selectedOnly = false;
+  const gallery = document.createElement('div');
+  gallery.className = 'gallery';
+  gallery.innerHTML = `<button class="close" aria-label="Close">×</button><div class="gallery-head"><strong>Analyzed frames</strong><span></span><button class="filter"></button></div><div class="grid"></div>`;
+  const render = () => {
+    const visible = selectedOnly ? frames.filter((frame) => frame.selected) : frames;
+    gallery.querySelector('.gallery-head span')!.textContent = `${frames.filter((frame) => frame.selected).length} selected of ${frames.length}`;
+    gallery.querySelector('.filter')!.textContent = selectedOnly ? 'Show all frames' : 'Show selected only';
+    const grid = gallery.querySelector('.grid')!;
+    grid.replaceChildren();
+    if (!visible.length) { const empty = document.createElement('div'); empty.className = 'empty'; empty.textContent = 'No selected frames.'; grid.append(empty); return; }
+    for (const frame of visible) {
+      const card = document.createElement('article');
+      card.className = `card${frame.selected ? ' selected' : ''}`;
+      card.innerHTML = `<img alt="Analyzed lecture frame">${frame.selected ? '<span class="badge">SELECTED</span>' : ''}<div class="meta"><button class="time"></button><span>Change ${frame.changeScore.toFixed(3)}</span></div>`;
+      const image = card.querySelector('img') as HTMLImageElement;
+      image.src = frame.dataUrl;
+      image.addEventListener('click', () => { gallery.style.display = 'none'; showViewer(visible, () => { gallery.style.display = 'block'; }); });
+      card.querySelector('.time')!.textContent = formatTime(frame.timestamp);
+      card.querySelector('.time')!.addEventListener('click', () => { const video = getAdapter().findVideo(); if (video) video.currentTime = frame.timestamp; });
+      grid.append(card);
+    }
+  };
+  const close = () => { document.removeEventListener('keydown', keyboard); gallery.remove(); renderButton(); };
+  const keyboard = (event: KeyboardEvent) => { if (event.key === 'Escape' && !shadow?.querySelector('.viewer')) close(); };
+  gallery.querySelector('.close')!.addEventListener('click', close);
+  gallery.querySelector('.filter')!.addEventListener('click', () => { selectedOnly = !selectedOnly; render(); });
+  document.addEventListener('keydown', keyboard);
+  shadow.append(gallery);
+  render();
+}
+
 async function startExtraction(override?: Preferences) {
   if (busy) return;
   const adapter = getAdapter();
@@ -97,7 +132,7 @@ async function startExtraction(override?: Preferences) {
     const stored = await chrome.storage.sync.get(DEFAULT_PREFERENCES);
     const preferences = normalizePreferences(override ?? stored);
     const frames = await extractFrames(adapter, preferences, (message) => { statusText = message; renderButton(); });
-    showViewer(frames);
+    showGallery(frames);
   } catch (error) {
     busy = false;
     showError(error instanceof Error ? error.message : 'Frame extraction failed.');
@@ -111,7 +146,7 @@ async function startExtraction(override?: Preferences) {
 
 function refreshPresence() {
   ensureUi();
-  if (!busy && !shadow?.querySelector('.viewer')) {
+  if (!busy && !shadow?.querySelector('.viewer') && !shadow?.querySelector('.gallery')) {
     const button = shadow?.querySelector<HTMLElement>('.launch');
     if (button) button.style.display = getAdapter().findVideo() ? 'block' : 'none';
   }
@@ -119,7 +154,10 @@ function refreshPresence() {
 
 chrome.runtime.onMessage.addListener((message: RuntimeMessage, _sender, respond) => {
   if (message.type === 'LFE_START') { void startExtraction(message.preferences); respond({ ok: true }); }
-  if (message.type === 'LFE_STATUS') respond({ found: Boolean(getAdapter().findVideo()), busy });
+  if (message.type === 'LFE_STATUS') {
+    const video = getAdapter().findVideo();
+    respond({ found: Boolean(video), busy, videoWidth: video?.videoWidth ?? 1920, videoHeight: video?.videoHeight ?? 1080 });
+  }
   return false;
 });
 

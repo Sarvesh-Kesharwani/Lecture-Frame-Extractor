@@ -3,31 +3,35 @@ import { visualChange, type AnalysisFrame } from './similarity';
 
 export function selectFrames(samples: AnalysisFrame[], mode: ExtractionMode, detail: FrameDetail): AnalysisFrame[] {
   if (samples.length <= 2) return samples;
-  const threshold = { compact: 0.17, balanced: 0.14, detailed: 0.105 }[detail];
+  const cutThreshold = { compact: 0.19, balanced: 0.14, detailed: 0.09 }[detail];
+  const evolutionThreshold = { compact: 0.13, balanced: 0.085, detailed: 0.045 }[detail];
   const segments: AnalysisFrame[][] = [[]];
   for (const sample of samples) {
-    const current = segments.at(-1)!;
-    const previous = current.at(-1);
-    if (previous && visualChange(previous, sample) > threshold) segments.push([]);
+    if (sample.changeScore > cutThreshold && segments.at(-1)!.length) segments.push([]);
     segments.at(-1)!.push(sample);
   }
 
   const chosen: AnalysisFrame[] = [];
   for (const segment of segments.filter((value) => value.length)) {
-    const end = segment.at(-1)!;
-    if (mode === 'auto' && segment.length >= (detail === 'detailed' ? 5 : 8)) {
-      const start = segment[0];
-      const mid = segment[Math.floor(segment.length * 0.55)];
-      if (visualChange(start, mid) > threshold * 0.58 && visualChange(mid, end) > threshold * 0.42) chosen.push(mid);
+    if (mode === 'auto') {
+      let anchor = segment[0];
+      for (let i = 2; i < segment.length - 1; i += 1) {
+        const candidate = segment[i];
+        if (visualChange(anchor, candidate, false) >= evolutionThreshold) {
+          chosen.push(candidate);
+          anchor = candidate;
+          i += detail === 'detailed' ? 1 : 2;
+        }
+      }
     }
-    chosen.push(end);
+    chosen.push(segment.at(-1)!);
   }
 
   const deduped: AnalysisFrame[] = [];
   for (const candidate of chosen) {
-    const duplicate = deduped.some((kept) => visualChange(kept, candidate) < threshold * 0.28);
-    if (!duplicate) deduped.push(candidate);
-    else if (candidate.density > deduped.at(-1)!.density * 1.08) deduped[deduped.length - 1] = candidate;
+    const previous = deduped.at(-1);
+    if (!previous || visualChange(previous, candidate, false) >= evolutionThreshold * 0.32) deduped.push(candidate);
+    else if (candidate.density > previous.density * 1.05) deduped[deduped.length - 1] = candidate;
   }
   return deduped;
 }
