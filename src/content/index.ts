@@ -9,6 +9,8 @@ let host: HTMLElement | null = null;
 let shadow: ShadowRoot | null = null;
 let activeRecord: VideoRecord | null = null;
 
+const isInvalidatedContext = (error?: unknown) => !chrome.runtime?.id || (error instanceof Error && /extension context invalidated/i.test(error.message));
+
 async function recordId(url: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(url));
   return [...new Uint8Array(digest)].slice(0, 12).map((value) => value.toString(16).padStart(2, '0')).join('');
@@ -29,7 +31,7 @@ function ensureUi() {
   shadow = host.attachShadow({ mode: 'open' });
   const style = document.createElement('style');
   style.textContent = `
-    :host{all:initial} *{box-sizing:border-box}.launch{position:fixed;right:18px;bottom:72px;z-index:2147483646;border:0;border-radius:999px;background:#111;color:#fff;padding:10px 15px;font:600 13px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer}.launch:hover{background:#292929}.launch:disabled{opacity:.7;cursor:wait}.status{position:fixed;right:18px;bottom:116px;z-index:2147483646;max-width:340px;padding:9px 12px;border-radius:8px;background:#111;color:#fff;font:12px system-ui;box-shadow:0 4px 18px #0005}.viewer{position:fixed;inset:0;z-index:2147483647;background:#080808;display:flex;align-items:center;justify-content:center;font-family:system-ui;color:#fff}.viewer>img{max-width:100vw;max-height:calc(100vh - 72px);object-fit:contain}.nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.nav button,.close{pointer-events:auto;border:0;background:#0008;color:#fff;cursor:pointer;font-size:28px}.nav button{width:58px;height:88px;border-radius:8px}.close{position:absolute;right:16px;top:16px;width:42px;height:42px;border-radius:50%;z-index:2}.footer{position:absolute;bottom:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:center;gap:22px;background:linear-gradient(transparent,#000c);font:14px system-ui}.time{border:0;background:transparent;color:#8ec5ff;text-decoration:underline;cursor:pointer;font:inherit}.error{position:fixed;right:18px;bottom:116px;z-index:2147483647;max-width:380px;padding:12px 14px;border-radius:8px;background:#7f1d1d;color:white;font:13px/1.4 system-ui;box-shadow:0 4px 20px #0007}.gallery{position:fixed;inset:0;z-index:2147483647;background:#0a0a0d;color:#fff;font-family:system-ui;overflow:auto;padding:82px 22px 28px}.gallery-head{position:fixed;z-index:2;left:0;right:0;top:0;height:66px;padding:0 76px 0 22px;background:#111118eF;backdrop-filter:blur(12px);display:flex;align-items:center;gap:12px;border-bottom:1px solid #ffffff18}.gallery-head strong{font-size:16px}.gallery-head span{font-size:12px;color:#aaa}.filter,.finish{border:1px solid #555;border-radius:8px;background:#23232d;color:#fff;padding:8px 12px;font:600 12px system-ui;cursor:pointer}.filter{margin-left:auto}.finish{border-color:#1da765;background:#137a48}.filter:disabled,.finish:disabled{opacity:.5;cursor:wait}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.card{position:relative;background:#181820;border:2px solid transparent;border-radius:10px;overflow:hidden}.card.selected{border-color:#39dc88;box-shadow:0 0 0 2px #39dc8840}.card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}.badge{position:absolute;right:7px;top:7px;border-radius:999px;background:#137a48;color:#fff;padding:4px 7px;font:700 10px system-ui}.meta{display:flex;align-items:center;justify-content:space-between;padding:8px 9px;font:11px system-ui;color:#aaa}.meta .time{color:#8ec5ff}.toggle{border:1px solid #555;border-radius:6px;background:#262631;color:#ddd;padding:4px 7px;font:600 10px system-ui;cursor:pointer}.card.selected .toggle{background:#137a48;border-color:#39dc88;color:#fff}.empty{text-align:center;color:#aaa;padding:60px}`;
+    :host{all:initial} *{box-sizing:border-box}.launch{position:fixed;right:18px;bottom:72px;z-index:2147483646;border:0;border-radius:999px;background:#111;color:#fff;padding:10px 15px;font:600 13px system-ui;box-shadow:0 4px 18px #0005;cursor:pointer}.launch:hover{background:#292929}.launch:disabled{opacity:.7;cursor:wait}.status{position:fixed;right:18px;bottom:116px;z-index:2147483646;max-width:340px;padding:9px 12px;border-radius:8px;background:#111;color:#fff;font:12px system-ui;box-shadow:0 4px 18px #0005}.viewer{position:fixed;inset:0;z-index:2147483647;background:#080808;display:flex;align-items:center;justify-content:center;font-family:system-ui;color:#fff}.viewer>img{max-width:100vw;max-height:calc(100vh - 72px);object-fit:contain}.nav{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.nav button,.close{pointer-events:auto;border:0;background:#0008;color:#fff;cursor:pointer;font-size:28px}.nav button{width:58px;height:88px;border-radius:8px}.close{position:absolute;right:16px;top:16px;width:42px;height:42px;border-radius:50%;z-index:2}.footer{position:absolute;bottom:0;left:0;right:0;height:62px;display:flex;align-items:center;justify-content:center;gap:22px;background:linear-gradient(transparent,#000c);font:14px system-ui}.time{border:0;background:transparent;color:#8ec5ff;text-decoration:underline;cursor:pointer;font:inherit}.error{position:fixed;right:18px;bottom:116px;z-index:2147483647;max-width:380px;padding:12px 14px;border-radius:8px;background:#7f1d1d;color:white;font:13px/1.4 system-ui;box-shadow:0 4px 20px #0007}.error button{display:block;margin-top:9px;border:0;border-radius:6px;background:#fff;color:#7f1d1d;padding:7px 10px;font:700 12px system-ui;cursor:pointer}.gallery{position:fixed;inset:0;z-index:2147483647;background:#0a0a0d;color:#fff;font-family:system-ui;overflow:auto;padding:82px 22px 28px}.gallery-head{position:fixed;z-index:2;left:0;right:0;top:0;height:66px;padding:0 76px 0 22px;background:#111118eF;backdrop-filter:blur(12px);display:flex;align-items:center;gap:12px;border-bottom:1px solid #ffffff18}.gallery-head strong{font-size:16px}.gallery-head span{font-size:12px;color:#aaa}.filter,.finish{border:1px solid #555;border-radius:8px;background:#23232d;color:#fff;padding:8px 12px;font:600 12px system-ui;cursor:pointer}.filter{margin-left:auto}.finish{border-color:#1da765;background:#137a48}.filter:disabled,.finish:disabled{opacity:.5;cursor:wait}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}.card{position:relative;background:#181820;border:2px solid transparent;border-radius:10px;overflow:hidden}.card.selected{border-color:#39dc88;box-shadow:0 0 0 2px #39dc8840}.card img{display:block;width:100%;aspect-ratio:16/9;object-fit:contain;background:#000}.badge{position:absolute;right:7px;top:7px;border-radius:999px;background:#137a48;color:#fff;padding:4px 7px;font:700 10px system-ui}.meta{display:flex;align-items:center;justify-content:space-between;padding:8px 9px;font:11px system-ui;color:#aaa}.meta .time{color:#8ec5ff}.toggle{border:1px solid #555;border-radius:6px;background:#262631;color:#ddd;padding:4px 7px;font:600 10px system-ui;cursor:pointer}.card.selected .toggle{background:#137a48;border-color:#39dc88;color:#fff}.empty{text-align:center;color:#aaa;padding:60px}`;
   shadow.append(style);
   document.documentElement.append(host);
   renderButton();
@@ -52,12 +54,18 @@ function renderButton() {
   }
 }
 
-function showError(message: string) {
+function showError(message: string, reloadRequired = false) {
   statusText = '';
   renderButton();
   const error = document.createElement('div');
   error.className = 'error';
-  error.textContent = message;
+  error.append(document.createTextNode(message));
+  if (reloadRequired) {
+    const reload = document.createElement('button');
+    reload.textContent = 'Reload this page';
+    reload.addEventListener('click', () => location.reload());
+    error.append(reload);
+  }
   shadow?.append(error);
   setTimeout(() => error.remove(), 9000);
 }
@@ -153,6 +161,7 @@ function showGallery(frames: ExtractedFrame[]) {
 
 async function startExtraction(override?: Preferences) {
   if (busy) return;
+  if (!chrome.runtime?.id) { showError('The extension was updated while this tab was open. Reload the page to reconnect it.', true); return; }
   const adapter = getAdapter();
   if (!adapter.findVideo()) { showError('No supported, ready HTML5 video was found on this page.'); return; }
   busy = true;
@@ -183,7 +192,7 @@ async function startExtraction(override?: Preferences) {
     showGallery(frames);
   } catch (error) {
     busy = false;
-    showError(error instanceof Error ? error.message : 'Frame extraction failed.');
+    showError(isInvalidatedContext(error) ? 'The extension was updated while this tab was open. Reload the page to reconnect it.' : error instanceof Error ? error.message : 'Frame extraction failed.', isInvalidatedContext(error));
     return;
   } finally {
     busy = false;
