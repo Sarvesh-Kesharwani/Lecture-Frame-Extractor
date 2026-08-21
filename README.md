@@ -17,7 +17,7 @@ TypeScript + React + Vite (via CRXJS) gives a small, typed MV3 build and reliabl
 5. Prefer the final (most complete) state before each transition. Auto mode may retain an additional evolved state for a long, information-changing canvas; Minimum mode retains only segment endpoints.
 6. Remove perceptually near-duplicate selections.
 7. Retain a memory-bounded preview during that same pass, then show every analyzed frame in an editable debug gallery with selected frames highlighted and a Selected-only toggle.
-8. On **Finish & Study**, revisit only the user's final choices for original-resolution capture; no similarity analysis is repeated.
+8. On **Finish & Study**, revisit only the user's final choices for original-resolution JPEG capture at 98% quality; no similarity analysis is repeated. The library displays each saved frame's pixel dimensions and offers true browser full-screen study mode.
 
 Everything is processed locally. No video or image is uploaded.
 

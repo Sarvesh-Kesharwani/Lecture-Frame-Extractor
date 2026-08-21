@@ -80,7 +80,7 @@ export async function extractFrames(adapter: VideoAdapter, preferences: Preferen
     if (samples.length < 2) throw new Error('The player repeatedly failed to seek. Check that the video is fully loaded and seekable, then try again.');
     const selected = new Set(selectFrames(samples, preferences.mode, preferences.detail).map((frame) => frame.timestamp));
     progress(`Selected ${selected.size} of ${samples.length} analyzed frames`, 100);
-    return samples.map((frame) => ({ timestamp: frame.timestamp, dataUrl: frame.previewDataUrl, selected: selected.has(frame.timestamp), changeScore: frame.changeScore, signature: encodePixels(frame.pixels), density: frame.density }));
+    return samples.map((frame) => ({ timestamp: frame.timestamp, dataUrl: frame.previewDataUrl, selected: selected.has(frame.timestamp), changeScore: frame.changeScore, signature: encodePixels(frame.pixels), density: frame.density, pixelWidth: previewCanvas.width, pixelHeight: previewCanvas.height }));
   } finally {
     try { await adapter.seek(originalTime); } catch { /* The page may have navigated away. */ }
     if (!wasPaused) void video.play().catch(() => undefined);
@@ -106,7 +106,7 @@ export async function captureSelectedFrames(adapter: VideoAdapter, frames: Extra
       try {
         await seekWithRetry(adapter, frames[i].timestamp);
         draw(video, canvas);
-        captured.push({ ...frames[i], dataUrl: canvas.toDataURL('image/jpeg', 0.94), selected: true });
+        captured.push({ ...frames[i], dataUrl: canvas.toDataURL('image/jpeg', 0.98), selected: true, pixelWidth: canvas.width, pixelHeight: canvas.height });
       } catch {
         // A single unavailable timestamp should not discard the remaining final choices.
       }

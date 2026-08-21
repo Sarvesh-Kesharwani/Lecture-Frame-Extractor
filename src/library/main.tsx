@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { setOutputDirectory } from '../storage/file-system';
 import type { VideoRecord } from '../shared/types';
@@ -21,6 +21,7 @@ function App() {
   const [activeId, setActiveId] = useState('');
   const [index, setIndex] = useState(0);
   const [storageMessage, setStorageMessage] = useState('');
+  const studyRef = useRef<HTMLElement>(null);
   useEffect(() => {
     void chrome.runtime.sendMessage({ type: 'LFE_LIST_RECORDS' }).then(({ records: found }: { records: VideoRecord[] }) => {
       const sorted = found.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -51,6 +52,10 @@ function App() {
       setStorageMessage('Chrome could not retain access to that folder. Please choose another folder.');
     }
   };
+  const toggleFullscreen = async () => {
+    if (document.fullscreenElement) await document.exitFullscreen();
+    else await studyRef.current?.requestFullscreen();
+  };
   return <main>
     <aside>
       <header><img src="/icons/icon-48.png" alt=""/><div><strong>Frame Library</strong><span>{records.length} saved videos</span></div></header>
@@ -58,11 +63,11 @@ function App() {
       {storageMessage && <p>{storageMessage}</p>}
       <nav>{records.map((record) => <button key={record.id} className={record.id === activeId ? 'active' : ''} onClick={() => setActiveId(record.id)}><strong>{record.title}</strong><span>{record.frames.filter((frame) => frame.selected).length} selected · {record.frames.length} total</span></button>)}</nav>
     </aside>
-    <section className="study">
+    <section className="study" ref={studyRef}>
       {!active && <div className="empty"><h1>No saved lectures yet</h1><p>Extract a video once, then it will appear here.</p></div>}
       {active && !frames.length && <div className="empty"><h1>No selected frames</h1><p>Open the video’s analyzed-frame gallery and select frames first.</p></div>}
       {active && frames[index] && <>
-        <div className="title"><strong>{active.title}</strong><a href={active.url} target="_blank" rel="noreferrer">Open video</a></div>
+        <div className="title"><strong>{active.title}</strong><span>{frames[index].pixelWidth || 'Unknown'}×{frames[index].pixelHeight || 'Unknown'} px</span><a href={active.url} target="_blank" rel="noreferrer">Open video</a><button onClick={() => void toggleFullscreen()}>Full Screen</button></div>
         <img className="frame" src={frames[index].dataUrl} alt={`Frame ${index + 1}`}/>
         <button className="previous" disabled={index === 0} onClick={() => setIndex((value) => value - 1)}>‹</button>
         <button className="next" disabled={index === frames.length - 1} onClick={() => setIndex((value) => value + 1)}>›</button>

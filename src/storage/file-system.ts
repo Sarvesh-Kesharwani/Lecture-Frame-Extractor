@@ -64,6 +64,8 @@ export async function writeRecordToDirectory(record: VideoRecord): Promise<boole
       selected: frame.selected,
       changeScore: frame.changeScore,
       density: frame.density,
+      pixelWidth: frame.pixelWidth,
+      pixelHeight: frame.pixelHeight,
       file: `all-frames/frame-${String(index + 1).padStart(4, '0')}-${Math.round(frame.timestamp)}s.jpg`,
     })),
   };

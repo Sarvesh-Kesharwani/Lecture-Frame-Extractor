@@ -14,6 +14,8 @@ export interface ExtractedFrame {
   changeScore: number;
   signature: string;
   density: number;
+  pixelWidth: number;
+  pixelHeight: number;
 }
 
 export interface VideoRecord {
