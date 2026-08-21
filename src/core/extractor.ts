@@ -78,3 +78,35 @@ export async function extractFrames(adapter: VideoAdapter, preferences: Preferen
     signatureCanvas.width = 1;
   }
 }
+
+/** Revisit only the user's final choices and capture them at the video's original resolution. No analysis is repeated. */
+export async function captureSelectedFrames(adapter: VideoAdapter, frames: ExtractedFrame[], progress: Progress): Promise<ExtractedFrame[]> {
+  const video = adapter.findVideo();
+  if (!video || !video.videoWidth || !video.videoHeight) throw new Error('The original video is no longer available for final capture.');
+  const originalTime = video.currentTime;
+  const wasPaused = video.paused;
+  video.pause();
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const captured: ExtractedFrame[] = [];
+  try {
+    for (let i = 0; i < frames.length; i += 1) {
+      try {
+        await seekWithRetry(adapter, frames[i].timestamp);
+        draw(video, canvas);
+        captured.push({ ...frames[i], dataUrl: canvas.toDataURL('image/jpeg', 0.94), selected: true });
+      } catch {
+        // A single unavailable timestamp should not discard the remaining final choices.
+      }
+      progress(`Capturing final frames at ${canvas.width}×${canvas.height}… ${i + 1}/${frames.length}`, Math.round(((i + 1) / frames.length) * 100));
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    }
+    if (!captured.length) throw new Error('The player could not capture any selected frames. Let the video buffer and try again.');
+    return captured;
+  } finally {
+    try { await adapter.seek(originalTime); } catch { /* The page may have navigated away. */ }
+    if (!wasPaused) void video.play().catch(() => undefined);
+    canvas.width = 1;
+  }
+}
