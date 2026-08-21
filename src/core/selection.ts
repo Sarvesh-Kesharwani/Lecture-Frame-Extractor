@@ -1,9 +1,9 @@
-import type { ExtractionMode } from '../shared/types';
+import type { ExtractionMode, FrameDetail } from '../shared/types';
 import { visualChange, type AnalysisFrame } from './similarity';
 
-export function selectFrames(samples: AnalysisFrame[], mode: ExtractionMode, sensitivity: number): AnalysisFrame[] {
+export function selectFrames(samples: AnalysisFrame[], mode: ExtractionMode, detail: FrameDetail): AnalysisFrame[] {
   if (samples.length <= 2) return samples;
-  const threshold = 0.19 - (sensitivity / 100) * 0.08;
+  const threshold = { compact: 0.17, balanced: 0.14, detailed: 0.105 }[detail];
   const segments: AnalysisFrame[][] = [[]];
   for (const sample of samples) {
     const current = segments.at(-1)!;
@@ -15,7 +15,7 @@ export function selectFrames(samples: AnalysisFrame[], mode: ExtractionMode, sen
   const chosen: AnalysisFrame[] = [];
   for (const segment of segments.filter((value) => value.length)) {
     const end = segment.at(-1)!;
-    if (mode === 'auto' && segment.length >= 8) {
+    if (mode === 'auto' && segment.length >= (detail === 'detailed' ? 5 : 8)) {
       const start = segment[0];
       const mid = segment[Math.floor(segment.length * 0.55)];
       if (visualChange(start, mid) > threshold * 0.58 && visualChange(mid, end) > threshold * 0.42) chosen.push(mid);

@@ -8,6 +8,6 @@ describe('frame selection', () => {
   it('recognizes major visual changes', () => expect(visualChange(frame(0, 0), frame(1, 255))).toBeGreaterThan(0.5));
   it('keeps the end of each visual state and removes duplicates', () => {
     const samples = [frame(0, 0), frame(1, 2), frame(2, 4), frame(3, 220), frame(4, 222), frame(5, 4)];
-    expect(selectFrames(samples, 'minimum', 50).map((item) => item.timestamp)).toEqual([2, 4]);
+    expect(selectFrames(samples, 'minimum', 'balanced').map((item) => item.timestamp)).toEqual([2, 4]);
   });
 });

@@ -1,6 +1,6 @@
 import { getAdapter } from '../core/adapters';
 import { extractFrames } from '../core/extractor';
-import { DEFAULT_PREFERENCES, type ExtractedFrame, type Preferences, type RuntimeMessage } from '../shared/types';
+import { DEFAULT_PREFERENCES, normalizePreferences, type ExtractedFrame, type Preferences, type RuntimeMessage } from '../shared/types';
 
 const HOST_ID = 'lecture-frame-extractor-root';
 let busy = false;
@@ -95,15 +95,17 @@ async function startExtraction(override?: Preferences) {
   renderButton();
   try {
     const stored = await chrome.storage.sync.get(DEFAULT_PREFERENCES);
-    const preferences = override ?? (stored as unknown as Preferences);
+    const preferences = normalizePreferences(override ?? stored);
     const frames = await extractFrames(adapter, preferences, (message) => { statusText = message; renderButton(); });
     showViewer(frames);
   } catch (error) {
+    busy = false;
     showError(error instanceof Error ? error.message : 'Frame extraction failed.');
+    return;
   } finally {
     busy = false;
     statusText = '';
-    if (!shadow?.querySelector('.viewer')) renderButton();
+    if (!shadow?.querySelector('.viewer') && !shadow?.querySelector('.error')) renderButton();
   }
 }
 

@@ -52,7 +52,7 @@ npm.cmd run dev
 - `src/core/similarity.ts`: low-resolution robust visual comparison.
 - `src/core/selection.ts`: state segmentation and near-duplicate removal.
 - `src/content/index.ts`: SPA-safe in-page button, progress, and full-viewport viewer.
-- `src/popup`: persisted Auto/Minimum mode and sensitivity.
+- `src/popup`: persisted Auto/Minimum mode and clear Compact/Balanced/Detailed frame presets.
 
 ## Current support and limitations
 
